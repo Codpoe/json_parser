@@ -14,62 +14,79 @@ pub enum Token {
   Null(NullToken),
 }
 
+impl Token {
+  pub fn get_span(&self) -> &Span {
+    match self {
+      Token::LeftBrace(token) => &token.span,
+      Token::RightBrace(token) => &token.span,
+      Token::LeftBracket(token) => &token.span,
+      Token::RightBracket(token) => &token.span,
+      Token::Colon(token) => &token.span,
+      Token::Comma(token) => &token.span,
+      Token::String(token) => &token.span,
+      Token::Number(token) => &token.span,
+      Token::Boolean(token) => &token.span,
+      Token::Null(token) => &token.span,
+    }
+  }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct LeftBraceToken {
-  span: Span,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct RightBraceToken {
-  span: Span,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct LeftBracketToken {
-  span: Span,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct RightBracketToken {
-  span: Span,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ColBracketToken {
-  span: Span,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ColonToken {
-  span: Span,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct CommaToken {
-  span: Span,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct StringToken {
-  value: String,
-  span: Span,
+  pub value: String,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct NumberToken {
-  value: f64,
-  span: Span,
+  pub value: f64,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct BoolToken {
-  value: bool,
-  span: Span,
+  pub value: bool,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct NullToken {
-  span: Span,
+  pub span: Span,
 }
 
 enum StringState {
@@ -93,8 +110,7 @@ const TRUE_LEN: usize = "true".len();
 const FALSE_LEN: usize = "false".len();
 const NULL_LEN: usize = "null".len();
 
-pub struct Tokenizer<'a> {
-  input: &'a str,
+pub struct Tokenizer {
   chars: Vec<char>,
   len: usize,
   index: usize,
@@ -102,13 +118,12 @@ pub struct Tokenizer<'a> {
   column: usize,
 }
 
-impl<'a> Tokenizer<'a> {
-  pub fn new(input: &'a str) -> Self {
+impl Tokenizer {
+  pub fn new(input: &str) -> Self {
     let chars = input.chars().collect::<Vec<char>>();
     let len = chars.len();
 
     Self {
-      input,
       chars,
       len,
       index: 0,
@@ -136,8 +151,10 @@ impl<'a> Tokenizer<'a> {
         tokens.push(token);
       } else {
         return Err(format!(
-          "Unexpected symbol `` at {:#?}:{:#?}",
-          self.line, self.column
+          "Unexpected char {:#?} at {:#?}:{:#?}",
+          self.chars.get(self.index).unwrap(),
+          self.line,
+          self.column
         ));
       }
     }
@@ -145,18 +162,22 @@ impl<'a> Tokenizer<'a> {
     Ok(tokens)
   }
 
-  fn line_span(&self, size: usize) -> Span {
+  fn line_span(&self, start_loc: Option<Loc>, end_index: usize) -> Span {
+    let start_loc = start_loc.unwrap_or(Loc {
+      line: self.line,
+      column: self.column,
+      offset: self.index,
+    });
+
+    let span_len = end_index - start_loc.offset;
+
     Span {
-      start: Loc {
-        line: self.line,
-        column: self.column,
-        offset: self.index,
-      },
       end: Loc {
-        line: self.line,
-        column: self.column + size,
-        offset: self.index + size,
+        line: start_loc.line,
+        column: start_loc.column + span_len,
+        offset: start_loc.offset + span_len,
       },
+      start: start_loc,
     }
   }
 
@@ -203,7 +224,7 @@ impl<'a> Tokenizer<'a> {
     match c {
       '{' => {
         let token = Token::LeftBrace(LeftBraceToken {
-          span: self.line_span(1),
+          span: self.line_span(None, self.index + 1),
         });
         self.index += 1;
         self.column += 1;
@@ -212,7 +233,7 @@ impl<'a> Tokenizer<'a> {
       }
       '}' => {
         let token = Token::RightBrace(RightBraceToken {
-          span: self.line_span(1),
+          span: self.line_span(None, self.index + 1),
         });
         self.index += 1;
         self.column += 1;
@@ -221,7 +242,7 @@ impl<'a> Tokenizer<'a> {
       }
       '[' => {
         let token = Token::LeftBracket(LeftBracketToken {
-          span: self.line_span(1),
+          span: self.line_span(None, self.index + 1),
         });
         self.index += 1;
         self.column += 1;
@@ -230,7 +251,7 @@ impl<'a> Tokenizer<'a> {
       }
       ']' => {
         let token = Token::RightBracket(RightBracketToken {
-          span: self.line_span(1),
+          span: self.line_span(None, self.index + 1),
         });
         self.index += 1;
         self.column += 1;
@@ -239,7 +260,7 @@ impl<'a> Tokenizer<'a> {
       }
       ':' => {
         let token = Token::Colon(ColonToken {
-          span: self.line_span(1),
+          span: self.line_span(None, self.index + 1),
         });
         self.index += 1;
         self.column += 1;
@@ -248,7 +269,7 @@ impl<'a> Tokenizer<'a> {
       }
       ',' => {
         let token = Token::Comma(CommaToken {
-          span: self.line_span(1),
+          span: self.line_span(None, self.index + 1),
         });
         self.index += 1;
         self.column += 1;
@@ -261,7 +282,11 @@ impl<'a> Tokenizer<'a> {
 
   fn string(&mut self) -> Option<Token> {
     let mut state = StringState::Start;
-    let start_index = self.index;
+    let start_loc = Loc {
+      line: self.line,
+      column: self.column,
+      offset: self.index,
+    };
 
     while let Some(c) = self.chars.get(self.index) {
       match state {
@@ -278,8 +303,8 @@ impl<'a> Tokenizer<'a> {
           // 结束引号
           '"' => {
             let token = Token::String(StringToken {
-              value: self.substring(start_index, self.index + 1),
-              span: self.line_span(self.index + 1 - start_index),
+              value: self.substring(start_loc.offset, self.index + 1),
+              span: self.line_span(Some(start_loc), self.index + 1),
             });
             self.index += 1;
             self.column += 1;
@@ -327,7 +352,6 @@ impl<'a> Tokenizer<'a> {
             _ => return None,
           }
         }
-        _ => return None,
       }
     }
 
@@ -336,8 +360,12 @@ impl<'a> Tokenizer<'a> {
 
   fn number(&mut self) -> Option<Token> {
     let mut state = NumberState::Start;
-    let start_index = self.index;
     let mut parsed_index: usize = 0;
+    let start_loc = Loc {
+      line: self.line,
+      column: self.column,
+      offset: self.index,
+    };
 
     while let Some(c) = self.chars.get(self.index) {
       match state {
@@ -347,20 +375,22 @@ impl<'a> Tokenizer<'a> {
           }
           '0' => {
             state = NumberState::Zero;
+            parsed_index = self.index + 1;
           }
           '1'..='9' => {
             state = NumberState::Digit;
+            parsed_index = self.index + 1;
           }
           _ => break,
         },
         NumberState::Minus => match c {
           '0' => {
             state = NumberState::Zero;
-            parsed_index = self.index;
+            parsed_index = self.index + 1;
           }
           '1'..='9' => {
             state = NumberState::Digit;
-            parsed_index = self.index;
+            parsed_index = self.index + 1;
           }
           _ => break,
         },
@@ -375,7 +405,7 @@ impl<'a> Tokenizer<'a> {
         },
         NumberState::Digit => match c {
           '0'..='9' => {
-            parsed_index = self.index;
+            parsed_index = self.index + 1;
           }
           '.' => {
             state = NumberState::Point;
@@ -388,14 +418,14 @@ impl<'a> Tokenizer<'a> {
         NumberState::Point => match c {
           '0'..='9' => {
             state = NumberState::Fraction;
-            parsed_index = self.index;
+            parsed_index = self.index + 1;
           }
           _ => break,
         },
         NumberState::Fraction => match c {
           '0'..='9' => {
             state = NumberState::Fraction;
-            parsed_index = self.index;
+            parsed_index = self.index + 1;
           }
           'e' | 'E' => {
             state = NumberState::Exp;
@@ -408,14 +438,14 @@ impl<'a> Tokenizer<'a> {
           }
           '0'..='9' => {
             state = NumberState::ExpSignOrDigit;
-            parsed_index = self.index;
+            parsed_index = self.index + 1;
           }
           _ => break,
         },
         NumberState::ExpSignOrDigit => match c {
           '0'..='9' => {
             state = NumberState::Fraction;
-            parsed_index = self.index
+            parsed_index = self.index + 1;
           }
           _ => break,
         },
@@ -427,12 +457,12 @@ impl<'a> Tokenizer<'a> {
 
     if parsed_index > 0 {
       let value = self
-        .substring(start_index, parsed_index + 1)
+        .substring(start_loc.offset, parsed_index)
         .parse::<f64>()
         .unwrap();
       let token = Token::Number(NumberToken {
         value,
-        span: self.line_span(parsed_index + 1 - start_index),
+        span: self.line_span(Some(start_loc), parsed_index),
       });
 
       return Some(token);
@@ -445,10 +475,10 @@ impl<'a> Tokenizer<'a> {
     if self.substring(self.index, self.index + TRUE_LEN) == "true" {
       let token = Token::Boolean(BoolToken {
         value: true,
-        span: self.line_span(TRUE_LEN),
+        span: self.line_span(None, self.index + TRUE_LEN),
       });
-      self.index + TRUE_LEN;
-      self.column + TRUE_LEN;
+      self.index += TRUE_LEN;
+      self.column += TRUE_LEN;
 
       return Some(token);
     }
@@ -456,10 +486,10 @@ impl<'a> Tokenizer<'a> {
     if self.substring(self.index, self.index + FALSE_LEN) == "false" {
       let token = Token::Boolean(BoolToken {
         value: false,
-        span: self.line_span(FALSE_LEN),
+        span: self.line_span(None, self.index + FALSE_LEN),
       });
-      self.index + FALSE_LEN;
-      self.column + FALSE_LEN;
+      self.index += FALSE_LEN;
+      self.column += FALSE_LEN;
 
       return Some(token);
     }
@@ -470,10 +500,10 @@ impl<'a> Tokenizer<'a> {
   fn null(&mut self) -> Option<Token> {
     if self.substring(self.index, self.index + NULL_LEN) == "null" {
       let token = Token::Null(NullToken {
-        span: self.line_span(NULL_LEN),
+        span: self.line_span(None, self.index + NULL_LEN),
       });
-      self.index + NULL_LEN;
-      self.column + NULL_LEN;
+      self.index += NULL_LEN;
+      self.column += NULL_LEN;
 
       return Some(token);
     }
@@ -482,16 +512,8 @@ impl<'a> Tokenizer<'a> {
   }
 }
 
-fn is_digit(c: &char) -> bool {
-  *c >= '0' && *c <= '9'
-}
-
-fn is_digit_1_to_9(c: &char) -> bool {
-  *c >= '1' && *c <= '9'
-}
-
 fn is_hex(c: &char) -> bool {
-  is_digit(c) || *c >= 'a' && *c <= 'f' || *c >= 'A' && *c <= 'F'
+  *c >= '0' && *c <= '9' || *c >= 'a' && *c <= 'f' || *c >= 'A' && *c <= 'F'
 }
 
 #[cfg(test)]
@@ -499,7 +521,7 @@ mod tests {
   use super::*;
 
   #[test]
-  fn it_works() {
+  fn test_tokenizer() {
     let mut tokenizer = Tokenizer::new("{\"hello\": \"world\"}");
     let tokens = tokenizer.tokenize().unwrap();
 
@@ -513,73 +535,73 @@ mod tests {
             start: Loc {
               line: 1,
               column: 1,
-              offset: 0,
+              offset: 0
             },
             end: Loc {
               line: 1,
               column: 2,
-              offset: 1,
-            },
-          },
-        },),
+              offset: 1
+            }
+          }
+        }),
         Token::String(StringToken {
           value: "\"hello\"".to_string(),
           span: Span {
             start: Loc {
               line: 1,
-              column: 8,
-              offset: 7,
+              column: 2,
+              offset: 1
             },
             end: Loc {
               line: 1,
-              column: 15,
-              offset: 14,
-            },
-          },
-        },),
+              column: 9,
+              offset: 8
+            }
+          }
+        }),
         Token::Colon(ColonToken {
           span: Span {
             start: Loc {
               line: 1,
               column: 9,
-              offset: 8,
+              offset: 8
             },
             end: Loc {
               line: 1,
               column: 10,
-              offset: 9,
-            },
-          },
-        },),
+              offset: 9
+            }
+          }
+        }),
         Token::String(StringToken {
           value: "\"world\"".to_string(),
           span: Span {
             start: Loc {
               line: 1,
-              column: 17,
-              offset: 16,
+              column: 11,
+              offset: 10
             },
             end: Loc {
               line: 1,
-              column: 24,
-              offset: 23,
-            },
-          },
-        },),
+              column: 18,
+              offset: 17
+            }
+          }
+        }),
         Token::RightBrace(RightBraceToken {
           span: Span {
             start: Loc {
               line: 1,
               column: 18,
-              offset: 17,
+              offset: 17
             },
             end: Loc {
               line: 1,
               column: 19,
-              offset: 18,
-            },
-          },
-        },),
+              offset: 18
+            }
+          }
+        })
       ]
     );
   }

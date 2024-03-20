@@ -1,27 +1,27 @@
-use std::collections::HashMap;
+use std::str::FromStr;
 
+use parser::{Ast, Parser};
+
+use crate::tokenizer::Tokenizer;
+
+mod parser;
 mod span;
 mod tokenizer;
 
-pub enum Json {
-  String(String),
-  Number(f64),
-  Boolean(bool),
-  Null,
-  Object(HashMap<String, Box<Json>>),
-  Array(Vec<Box<Json>>),
-}
+pub type Json = Ast;
 
-impl Json {
-  pub fn parse(input: &str) {}
-
-  pub fn stringify(&self) -> String {
-    "".to_string()
+impl FromStr for Json {
+  type Err = String;
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    Json::parse(s)
   }
 }
 
-pub fn add(left: usize, right: usize) -> usize {
-  left + right
+impl Json {
+  pub fn parse(input: &str) -> Result<Json, String> {
+    let tokens = Tokenizer::new(input).tokenize()?;
+    Parser::new(&tokens).parse()
+  }
 }
 
 #[cfg(test)]
@@ -30,7 +30,8 @@ mod tests {
 
   #[test]
   fn it_works() {
-    let result = add(2, 2);
-    assert_eq!(result, 4);
+    let json = Json::parse("[{ \"hello\": [\"world\", 1, null, true, { \"a\": [] }] }]").unwrap();
+
+    println!(">>> json {json:#?}");
   }
 }
