@@ -4,8 +4,8 @@ use parser::{Ast, Parser};
 
 use crate::tokenizer::Tokenizer;
 
-mod parser;
-mod span;
+pub mod parser;
+pub mod span;
 mod tokenizer;
 
 pub type Json = Ast;
@@ -32,6 +32,15 @@ mod tests {
   fn it_works() {
     let json = Json::parse("[{ \"hello\": [\"world\", 1, null, true, { \"a\": [] }] }]").unwrap();
 
-    println!(">>> json {json:#?}");
+    assert!(matches!(json, Json::Array(_)))
+  }
+
+  #[test]
+  fn test_from_str() {
+    let json = "[{ \"hello\": [\"world\", 1, null, true, { \"a\": [] }] }]"
+      .parse::<Json>()
+      .unwrap();
+
+    assert!(matches!(json, Json::Array(_)))
   }
 }

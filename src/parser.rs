@@ -111,7 +111,7 @@ enum ArrayState {
   Comma,
 }
 
-pub struct Parser<'a> {
+pub(crate) struct Parser<'a> {
   tokens: &'a [Token],
   len: usize,
   index: usize,
