@@ -7,6 +7,7 @@ use crate::tokenizer::Tokenizer;
 pub mod parser;
 pub mod span;
 mod tokenizer;
+pub mod visit;
 
 pub type Json = Ast;
 
@@ -26,6 +27,8 @@ impl Json {
 
 #[cfg(test)]
 mod tests {
+  use crate::visit::Visit;
+
   use super::*;
 
   #[test]
@@ -42,5 +45,41 @@ mod tests {
       .unwrap();
 
     assert!(matches!(json, Json::Array(_)))
+  }
+
+  #[test]
+  fn test_visit() {
+    let mut json = "{\"hello\":\"world\"}".parse::<Json>().unwrap();
+
+    struct Visitor {
+      pub property_pos: (usize, usize),
+      pub merged_string: String,
+    }
+
+    impl Visit for Visitor {
+      fn visit_property(&mut self, ast: &mut parser::PropertyAst) {
+        self.property_pos = (ast.span.start.offset, ast.span.end.offset);
+
+        self.visit_identifier(&mut ast.key);
+        self.visit_property_value(&mut ast.value);
+      }
+
+      fn visit_string(&mut self, ast: &mut parser::StringAst) {
+        if self.merged_string.is_empty() {
+          self.merged_string.push_str(&ast.value);
+        } else {
+          self.merged_string.push_str(&format!("_{}", ast.value));
+        }
+      }
+    }
+
+    let mut visitor = Visitor {
+      property_pos: (0, 0),
+      merged_string: String::new(),
+    };
+
+    visitor.visit_json(&mut json);
+    assert_eq!(visitor.property_pos, (1, 16));
+    assert_eq!(visitor.merged_string, "hello_world");
   }
 }

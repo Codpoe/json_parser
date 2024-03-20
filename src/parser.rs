@@ -45,50 +45,50 @@ impl Ast {
 
 #[derive(Debug, PartialEq)]
 pub struct StringAst {
-  value: String,
-  span: Span,
+  pub value: String,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct NumberAst {
-  value: f64,
-  span: Span,
+  pub value: f64,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct BoolAst {
-  value: bool,
-  span: Span,
+  pub value: bool,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct NullAst {
-  span: Span,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ObjectAst {
-  value: Vec<PropertyAst>,
-  span: Span,
+  pub value: Vec<PropertyAst>,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct PropertyAst {
-  key: IdentifierAst,
-  value: Box<Ast>,
-  span: Span,
+  pub key: IdentifierAst,
+  pub value: Box<Ast>,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct IdentifierAst {
-  value: StringAst,
-  span: Span,
+  pub value: StringAst,
+  pub span: Span,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ArrayAst {
-  value: Vec<Box<Ast>>,
-  span: Span,
+  pub value: Vec<Box<Ast>>,
+  pub span: Span,
 }
 
 enum ObjectState {
