@@ -280,7 +280,7 @@ impl<'a> Parser<'a> {
             start_span = Some(&token.span);
             identifier = Some(IdentifierAst {
               value: StringAst {
-                value: token.value.clone(),
+                value: parse_string(&token.value)?,
                 span: token.span.clone(),
               },
               span: token.span.clone(),
